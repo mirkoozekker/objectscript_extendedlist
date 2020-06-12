@@ -1,8 +1,10 @@
 Class util.Action Extends %RegisteredObject [ Abstract ]
 {
 
+/// Limit of method supported args. Used for code-generation.
 Parameter MaxArgs As %Integer = 100;
 
+/// Name of property or method.
 Property memberName As %String;
 
 Property args [ MultiDimensional ];
@@ -47,13 +49,15 @@ Method checkNumberOfParameters(max As %Integer = {..#MaxArgs}, args... As %Regis
 
 Method throwMaxArgsExceededException(max As %Integer, is As %Integer) [ Private ]
 {
-    do ##class(util.ExceptionHelper).raiseException("EXHELP.ToManyParametersEX","Die maximale Parameterzahl für diese Klasse ist überschritten.", "Klasse: "_..%ClassName(1)_", Max: "_max_", Anzahl: "_is)
+    do ##class(util.MaxArgsExceededException).raise(..%ClassName(1),max,is)
 }
 
+/// Method to do the actual call to the embedded property or method.
 Method invoke(args... As %RegisteredObject) [ Abstract ]
 {
 }
 
+/// Unfortunately [private] is not allowed. but actually it is private. So don't call it.
 ClassMethod invokeBase(methodCall As %String)
 {
 	do %code.WriteLine("  do ..checkNumberOfParameters(,args...)")
@@ -74,4 +78,3 @@ ClassMethod invokeBase(methodCall As %String)
 }
 
 }
-
