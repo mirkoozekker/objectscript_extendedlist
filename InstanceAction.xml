@@ -1,25 +1,25 @@
-Class util.InstanceMethodAction Extends util.InstanceAction
+Class util.InstanceAction Extends util.Action [ Abstract ]
 {
 
-Property instance As %RegisteredObject;
-
-/// Creates a new instance of this class.
-ClassMethod create(methodName As %String, args... As %RegisteredObject) As util.InstanceMethodAction
+Method combineArgs(ByRef newArray, args... As %RegisteredObject) [ Private ]
 {
-	#dim a as util.InstanceMethodAction
-	
-	set a = ..%New()
-	do a.setArgs(args...)
-	set a.memberName = methodName
-	
-	return a
-}
+  #dim c as %Integer
+  #dim currentArgsCount as %Integer
 
-/// Method to do the actual call to the embedded property or method.
-Method invoke(args... As %RegisteredObject) [ CodeMode = objectgenerator ]
-{
-	do %code.WriteLine("  set ..instance = args(1)")
-	do ##class(util.Action).invokeBase("  do $Method(..instance")
+  set currentArgsCount =  $ORDER(..args(""),-1)
+  set c = $GET(args,0)
+
+  do:((currentArgsCount+c)>..#MaxArgs) ..throwMaxArgsExceededException(..#MaxArgs,currentArgsCount+c)
+
+  for i=1:1:currentArgsCount
+  {
+    set newArray(i) = $GET(..args(i),"")
+  }
+
+  for i=2:1:c
+  {
+    set newArray(i+currentArgsCount) = $GET(args(i),"")
+  }
 }
 
 }
