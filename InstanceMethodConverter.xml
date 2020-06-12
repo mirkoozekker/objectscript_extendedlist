@@ -3,15 +3,18 @@ Class util.InstanceMethodConverter Extends (util.InstanceAction, util.Converter)
 
 Property instance As %RegisteredObject;
 
-ClassMethod create(methodName As %String, resultIsDataType As %Boolean = 1) As util.InstanceMethodConverter
+/// Creates a new instance of this class.
+ClassMethod create(methodName As %String, resultIsDataType As %Boolean = 1, args... As %RegisteredObject) As util.InstanceMethodConverter
 {
 	#dim d as util.InstanceMethodConverter
 	set d = ..%New()
+	do d.setArgs(args...)
 	set d.memberName = methodName
 	set d.resultIsDataType = resultIsDataType
 	return d
 }
 
+/// Method to do the actual call to the embedded property or method.
 Method invoke(args... As %RegisteredObject) As %RegisteredObject [ CodeMode = objectgenerator ]
 {
 	do %code.WriteLine("  set ..instance = args(1)")
@@ -20,4 +23,3 @@ Method invoke(args... As %RegisteredObject) As %RegisteredObject [ CodeMode = ob
 }
 
 }
-
