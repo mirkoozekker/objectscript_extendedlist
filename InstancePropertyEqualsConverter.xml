@@ -3,6 +3,7 @@ Class util.InstancePropertyEqualsConverter Extends util.Converter
 
 Property compareTo As %String;
 
+/// Creates a new instance of this class.
 ClassMethod create(propertyName As %String, compareTo As %RegisteredObject) As util.InstancePropertyEqualsConverter
 {
 	#dim d as util.InstancePropertyEqualsConverter
@@ -13,10 +14,10 @@ ClassMethod create(propertyName As %String, compareTo As %RegisteredObject) As u
 	return d
 }
 
+/// Method to do the actual call to the embedded property or method.
 Method invoke(obj As %RegisteredObject) As %RegisteredObject
 {
 	return $PROPERTY(obj, ..memberName)=..compareTo
 }
 
 }
-
