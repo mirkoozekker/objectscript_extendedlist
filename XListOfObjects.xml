@@ -1,0 +1,15 @@
+Class util.XListOfObjects Extends (%ListOfObjects, XList)
+{
+
+ClassMethod instantiate() As XListOfObjects [ Private ]
+{
+	return ..%New()
+}
+
+Storage Custom
+{
+<Type>%Library.CompleteCustomStorage</Type>
+}
+
+}
+

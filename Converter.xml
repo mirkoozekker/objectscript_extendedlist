@@ -1,0 +1,11 @@
+Class util.Converter Extends util.Action [ Abstract ]
+{
+
+Property resultIsDataType As %Boolean;
+
+Method invoke(a As %RegisteredObject) As %RegisteredObject
+{
+}
+
+}
+

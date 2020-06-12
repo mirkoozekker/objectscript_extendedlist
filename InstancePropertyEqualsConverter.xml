@@ -1,0 +1,22 @@
+Class util.InstancePropertyEqualsConverter Extends util.Converter
+{
+
+Property compareTo As %String;
+
+ClassMethod create(propertyName As %String, compareTo As %RegisteredObject) As util.InstancePropertyEqualsConverter
+{
+	#dim d as util.InstancePropertyEqualsConverter
+	set d = ..%New()
+	set d.memberName = propertyName
+	set d.compareTo = compareTo
+	set d.resultIsDataType = 1
+	return d
+}
+
+Method invoke(obj As %RegisteredObject) As %RegisteredObject
+{
+	return $PROPERTY(obj, ..memberName)=..compareTo
+}
+
+}
+

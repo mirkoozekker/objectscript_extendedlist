@@ -1,0 +1,24 @@
+Class util.ClassMethodConverter Extends util.Converter
+{
+
+Property className As %String;
+
+ClassMethod create(className As %String, methodName As %String, resultIsDataType As %Boolean = 1, args... As %RegisteredObject) As util.ClassMethodConverter
+{
+	#dim d as util.ClassMethodConverter
+	set d = ..%New()
+	do d.setArgs(args...)
+	set d.className = className
+	set d.memberName = methodName
+	set d.resultIsDataType = resultIsDataType
+	return d
+}
+
+Method invoke(args... As %RegisteredObject) As %RegisteredObject [ CodeMode = objectgenerator ]
+{
+	do ..invokeBase("  set result = $ClassMethod(..className")
+	do %code.WriteLine("  return result")
+}
+
+}
+

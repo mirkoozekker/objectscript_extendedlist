@@ -1,0 +1,368 @@
+Class util.XList Extends (%AbstractList, %RegisteredObject)
+{
+
+ClassMethod getLessOrEqualConverter(baseValue As %RegisteredObject) As util.Converter
+{
+	return ##class(util.ClassMethodConverter).create(..%ClassName(1),"isLessOrEqual",1,baseValue)
+}
+
+ClassMethod isLessOrEqual(baseValue As %RegisteredObject, val As %RegisteredObject) As %Boolean
+{
+	return val<=baseValue
+}
+
+ClassMethod getGreaterOrEqualConverter(baseValue As %RegisteredObject) As util.Converter
+{
+	return ##class(util.ClassMethodConverter).create(..%ClassName(1),"isGreaterOrEqual",1,baseValue)
+}
+
+ClassMethod isGreaterOrEqual(baseValue As %RegisteredObject, val As %RegisteredObject) As %Boolean
+{
+	return val>=baseValue
+}
+
+ClassMethod fromValues(values... As %RegisteredObject) As util.XList
+{
+	#dim a as XList
+	
+	set a = ..instantiate()
+	
+	for i=1:1:$GET(values,0)
+	{
+		do a.Insert($GET(values(i),""))
+	}
+	
+	return a
+}
+
+ClassMethod fromList(list As %AbstractList) As util.XList
+{
+	#dim a as XList
+	
+	set a = ..instantiate()
+	do a.insertMany(list)
+	
+	return a
+}
+
+ClassMethod fromArray(array As %AbstractArray) As XList
+{
+	#dim a as XList
+	#dim k as %String
+	
+	set a = ..instantiate()
+	do a.insertArrayValues(array)
+
+	return a
+}
+
+Method any(predicate As util.Converter) As %Boolean
+{
+	#dim found as %Boolean
+	set found = $$$NO
+
+	for i=1:1:..Count()
+	{
+		set found = predicate.invoke(..GetAt(i))
+		quit:found
+	}
+
+	return found
+}
+
+Method all(predicate As util.Converter) As %Boolean
+{
+	#dim found as %Boolean
+	set found = $$$YES
+
+	for i=1:1:..Count()
+	{
+		set found = predicate.invoke(..GetAt(i))
+		quit:'found
+	}
+
+	return found
+}
+
+ClassMethod listAny(list As %AbstractList, predicate As util.Converter) As %Boolean
+{
+	return ..fromList(list).any(predicate)
+}
+
+Method sum(converter As util.Converter = {..getDefaultConverter()}) As %Float
+{
+	#dim sum as %Float
+
+	set sum = 0
+	for i=1:1:..Count()
+	{
+		set sum = sum + converter.invoke(..GetAt(i))
+	}
+	return sum
+}
+
+Method select(predicate As util.Converter) As util.XList
+{
+	#dim list as util.XList
+	#dim item as %RegisteredObject
+	
+	set list = ..instantiate()
+
+	for i=1:1:..Count()
+	{
+		set item = ..GetAt(i)
+		do:(predicate.invoke(item)) list.Insert(item)
+	}
+
+	return list
+}
+
+ClassMethod listSelect(list As %AbstractList, predicate As util.Converter) As util.XList
+{
+	return ..fromList(list).select(predicate)
+}
+
+Method foreach(action As util.Action)
+{
+	for i=1:1:..Count()
+	{
+		do action.invoke(..GetAt(i))
+	}
+}
+
+Method first() As %RegisteredObject
+{
+	return $S(..Count()>0:..GetAt(1),1:"")
+}
+
+Method insertMany(list As %AbstractList)
+{
+	for i=1:1:list.Count()
+	{
+		do ..Insert(list.GetAt(i))
+	}
+}
+
+Method removeMany(list As %AbstractList)
+{
+	for i=1:1:list.Count()
+	{
+		do ..RemoveAt(..Find(list.GetAt(i)))
+	}
+}
+
+Method groupBy(keyGetter As util.Converter) As %AbstractArray
+{
+	#dim a as %AbstractArray
+	#dim key as %RegisteredObject
+	
+	set a =  ..newArray()
+	
+	for i=1:1:..Count()
+	{
+		set key = keyGetter.invoke(..GetAt(i))
+		do:('a.IsDefined(key)) a.SetAt(..%New(),key)
+		do a.GetAt(key).Insert(..GetAt(i))
+	}
+	
+	return a
+}
+
+Method orderDescBy(converter As util.Converter = {..getDefaultConverter()}) As XList
+{
+	return ..getOrderedList(..groupBy(converter),0)
+}
+
+Method orderAscBy(converter As util.Converter = {..getDefaultConverter()}) As XList
+{
+	return ..getOrderedList(..groupBy(converter))
+}
+
+Method getDefaultConverter() As util.ClassMethodConverter [ Private ]
+{
+	return ##class(util.ClassMethodConverter).create(..%ClassName(1), "getItem", 1)
+}
+
+ClassMethod getItem(item As %RegisteredObject) As %RegisteredObject
+{
+	return item
+}
+
+Method getOrderedList(orderedArray As %AbstractArray, asc As %Boolean = 1) As XList [ Private ]
+{
+	#dim result as XList
+	#dim items as XList
+	#dim key as %String
+	
+	set result = ..instantiate()
+	
+	set key = $S(asc:orderedArray.Next(),1:orderedArray.Previous())
+	while key'=""
+	{
+		set items = orderedArray.GetAt(key)
+		for i=1:1:items.Count()
+		{
+			do result.Insert(items.GetAt(i))
+		}
+		set key = $S(asc:orderedArray.Next(key),1:orderedArray.Previous(key))
+	}
+	
+	return result
+}
+
+Method newArray() As %AbstractArray [ Private ]
+{
+	return $S(..%IsA(##class(util.XListOfObjects).%ClassName(1)):##class(%ArrayOfObjects).%New(),1:##class(%ArrayOfDataTypes).%New())
+}
+
+Method distinct() As util.XList
+{
+	#dim x as util.XList
+	#dim a as %AbstractArray
+	#dim e as %RegisteredObject
+	
+	set a = ..newArray()
+	set x = ..instantiate()
+	
+	for i=1:1:..Count()
+	{
+		set e = ..GetAt(i)
+		continue:a.IsDefined(e)
+		
+		do x.Insert(e)
+		do a.SetAt(1,e)
+	}
+	
+	return x
+}
+
+Method insertArrayValues(array As %AbstractArray)
+{
+		#dim key as %String
+
+		set key = array.Next()
+		while key '= ""
+		{
+			do ..Insert(array.GetAt(key))
+			set key = array.Next(key)
+		}
+}
+
+Method convertAll(converter As util.Converter) As util.XList
+{
+	#dim x as util.XList
+	
+	set x = $S(converter.resultIsDataType:##class(util.XListOfDataTypes).%New(),1:##class(util.XListOfObjects).%New())
+	
+	for i=1:1:..Count()
+	{
+		do x.Insert(converter.invoke(..GetAt(i)))
+	}
+	
+	return x
+}
+
+ClassMethod listConvertAll(list As %AbstractList, converter As util.Converter) As util.XList
+{
+	return ..fromList(list).convertAll(converter)
+}
+
+/// Ermittelt den minimalen Wert in der Liste bezüglich des übergebenen Converters und gibt diesen zurück
+Method min(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
+{
+	return converter.invoke(..minItem(converter,skipEmptyValues))
+}
+
+/// Ermittelt den Eintrag der Liste mit dem minimalen Wert bezüglich des Converters und gibt den entsprechenden Listeneintrag zurück.
+Method minItem(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
+{
+	return ..getBestItem(converter,skipEmptyValues,0)
+}
+
+/// Ermittelt den maximalen Wert in der Liste bezüglich des übergebenen Converters und gibt diesen zurück
+Method max(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
+{
+	return converter.invoke(..maxItem(converter,skipEmptyValues))
+}
+
+/// Ermittelt den Eintrag der Liste mit dem maximalen Wert bezüglich des Converters und gibt den entsprechenden Listeneintrag zurück.
+Method maxItem(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
+{
+	return ..getBestItem(converter,skipEmptyValues,1)
+}
+
+Method getBestItem(converter As util.Converter, skipEmptyValues As %Boolean, greatest As %Boolean) As %RegisteredObject [ Private ]
+{
+	#dim result as %RegisteredObject
+	#dim x as %RegisteredObject
+	#dim item as %RegisteredObject
+	
+	set result = ""
+  set item = ..first()
+	for i=1:1:..Count()
+	{
+		set x = converter.invoke(..GetAt(i))
+		continue:(skipEmptyValues)&&(x="")
+		if ..isBetter(result, x, greatest)
+		{
+			set result = x
+			set item = ..GetAt(i)
+		}
+	}
+	
+	return item
+}
+
+Method toString(seperator As %String, converter As Converter = {..getDefaultConverter()}) As %String
+{
+	return ..stringJoinList(seperator, ..convertAll(converter))
+}
+
+Method toChunks(chunkSize As %Integer = 500) As util.XListOfObjects
+{
+	#dim chunks as util.XListOfObjects
+	#dim chunk as util.XList
+	
+	set chunks = ##class(util.XListOfObjects).%New()
+	set chunk = ..%New()
+	
+	for i=1:1:..Count()
+	{
+		do chunk.Insert(..GetAt(i))
+		if (i#chunkSize)=0
+		{
+			do chunks.Insert(chunk)
+			set chunk = ..%New()
+		}
+	}
+	
+	do:chunk.Count()>0 chunks.Insert(chunk)
+	
+	return chunks
+}
+
+Method isBetter(bestValue As %RegisteredObject, currentValue As %RegisteredObject, greater As %Boolean) As %Boolean [ Private ]
+{
+	return bestValue=""||((bestValue<currentValue)&&(greater))||((bestValue>currentValue)&&('greater))
+}
+
+ClassMethod instantiate() As %RegisteredObject [ Abstract, Private ]
+{
+}
+
+ClassMethod stringJoinList(separator As %String, parts As %ListOfDataTypes) As %String
+{
+	#dim line as %String
+	set line = ""
+	if parts '= ""
+	{
+		for i=1:1:parts.Count()
+		{
+			set line = line_parts.GetAt(i)_separator
+		}
+	}
+	return $E(line,1,*-$L(separator))
+}
+
+}
+

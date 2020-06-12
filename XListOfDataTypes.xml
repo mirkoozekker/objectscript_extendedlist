@@ -1,0 +1,45 @@
+Class util.XListOfDataTypes Extends (%ListOfDataTypes, XList)
+{
+
+ClassMethod instantiate() As XListOfDataTypes [ Private ]
+{
+		return ..%New()
+}
+
+ClassMethod fromArrayWithKey(array As %AbstractArray, separator As %String = ":") As XList
+{
+	#dim a as XList
+	#dim k as %String
+	
+	set a = ..instantiate()
+	do a.insertArrayValues(array, 1, separator)
+
+	return a
+}
+
+Method insertArrayValues(array As %AbstractArray, includeKey As %Boolean = 0, separator As %String = ":")
+{
+	#dim key as %String
+	
+	if includeKey
+	{
+		set key = array.Next()
+		while key '= ""
+		{
+			do ..Insert(key_separator_array.GetAt(key))
+			set key = array.Next(key)
+		}		
+	}
+	else
+	{
+		do ##super(array)
+	}
+}
+
+Storage Custom
+{
+<Type>%Library.CompleteCustomStorage</Type>
+}
+
+}
+

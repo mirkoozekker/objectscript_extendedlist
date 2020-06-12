@@ -1,0 +1,24 @@
+Class util.ClassMethodAction Extends util.Action
+{
+
+Property className As %String;
+
+ClassMethod create(className As %String, methodName As %String, args... As %RegisteredObject) As util.ClassMethodAction
+{
+	#dim a as util.ClassMethodAction
+	
+	set a = ..%New()
+	do a.setArgs(args...)
+	set a.className = className
+	set a.memberName = methodName
+	
+	return a
+}
+
+Method invoke(args... As %RegisteredObject) [ CodeMode = objectgenerator ]
+{
+	do ..invokeBase("  do $ClassMethod(..className")
+}
+
+}
+

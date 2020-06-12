@@ -1,0 +1,19 @@
+Class util.ObjectPropertyConverter Extends util.Converter
+{
+
+ClassMethod create(propertyName As %String, resultIsDataType As %Boolean = 1) As util.ObjectPropertyConverter
+{
+	#dim d as util.ObjectPropertyConverter
+	set d = ..%New()
+	set d.memberName = propertyName
+	set d.resultIsDataType = resultIsDataType
+	return d
+}
+
+Method invoke(obj As %RegisteredObject) As %RegisteredObject
+{
+	return $PROPERTY(obj, ..memberName)
+}
+
+}
+
