@@ -3,6 +3,7 @@ Class util.InstanceMethodAction Extends util.InstanceAction
 
 Property instance As %RegisteredObject;
 
+/// Creates a new instance of this class.
 ClassMethod create(methodName As %String, args... As %RegisteredObject) As util.InstanceMethodAction
 {
 	#dim a as util.InstanceMethodAction
@@ -14,6 +15,7 @@ ClassMethod create(methodName As %String, args... As %RegisteredObject) As util.
 	return a
 }
 
+/// Method to do the actual call to the embedded property or method.
 Method invoke(args... As %RegisteredObject) [ CodeMode = objectgenerator ]
 {
 	do %code.WriteLine("  set ..instance = args(1)")
@@ -21,4 +23,3 @@ Method invoke(args... As %RegisteredObject) [ CodeMode = objectgenerator ]
 }
 
 }
-
