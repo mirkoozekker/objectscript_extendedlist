@@ -23,4 +23,3 @@ Method combineArgs(ByRef newArray, args... As %RegisteredObject) [ Private ]
 }
 
 }
-
