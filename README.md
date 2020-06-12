@@ -42,3 +42,6 @@ do xListOfObjects.foreach(##class(util.ObjectMethodAction).create(myCoolServiceI
 
 ## Installation
 Just import the classes to your namespace in your favourite way.
+
+## Additional
+Of course you can use the method and property wrapper classes of this project not only with the XList but in any case you could think of in which passing a method or a property-getter to another method would be helpful.
