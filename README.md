@@ -1,5 +1,5 @@
 # XList
-Extended list for ObjectScript with support for functional programming
+Extended list for ObjectScript with support for declarative and functional programming
 
 ## Introduction
 Besides extended methods to instatiate lists, insert and remove items the XList provides support for functional programming.
