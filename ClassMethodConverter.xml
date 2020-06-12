@@ -3,6 +3,7 @@ Class util.ClassMethodConverter Extends util.Converter
 
 Property className As %String;
 
+/// Creates a new instance of this class.
 ClassMethod create(className As %String, methodName As %String, resultIsDataType As %Boolean = 1, args... As %RegisteredObject) As util.ClassMethodConverter
 {
 	#dim d as util.ClassMethodConverter
@@ -14,6 +15,7 @@ ClassMethod create(className As %String, methodName As %String, resultIsDataType
 	return d
 }
 
+/// Method to do the actual call to the embedded property or method.
 Method invoke(args... As %RegisteredObject) As %RegisteredObject [ CodeMode = objectgenerator ]
 {
 	do ..invokeBase("  set result = $ClassMethod(..className")
@@ -21,4 +23,3 @@ Method invoke(args... As %RegisteredObject) As %RegisteredObject [ CodeMode = ob
 }
 
 }
-
