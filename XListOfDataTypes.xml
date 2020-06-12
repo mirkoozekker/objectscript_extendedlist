@@ -6,9 +6,10 @@ ClassMethod instantiate() As XListOfDataTypes [ Private ]
 		return ..%New()
 }
 
-ClassMethod fromArrayWithKey(array As %AbstractArray, separator As %String = ":") As XList
+/// Creates a new XListOfDataTypes containing key and value of each array entry seperated by the given seperator.
+ClassMethod fromArrayWithKey(array As %AbstractArray, separator As %String = ":") As util.XListOfDataTypes
 {
-	#dim a as XList
+	#dim a as XListOfDataTypes
 	#dim k as %String
 	
 	set a = ..instantiate()
@@ -17,6 +18,7 @@ ClassMethod fromArrayWithKey(array As %AbstractArray, separator As %String = ":"
 	return a
 }
 
+/// Appends key and value of each array entry seperated by the given seperator.
 Method insertArrayValues(array As %AbstractArray, includeKey As %Boolean = 0, separator As %String = ":")
 {
 	#dim key as %String
@@ -42,4 +44,3 @@ Storage Custom
 }
 
 }
-
