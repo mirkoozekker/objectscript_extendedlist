@@ -1,0 +1,11 @@
+Class util.MaxArgsExceededException Extends %Exception.General
+{
+
+/// Throws an exception of this type
+ClassMethod raise(className As %String, maxArgs As %Integer, argsCount As %Integer)
+{
+	Throw ..%New(..%ClassName(1),,,"Maximum number of arguments exceeded. Class: "_className_", max: "_maxArgs_", is: "_argsCount)
+}
+
+}
+
