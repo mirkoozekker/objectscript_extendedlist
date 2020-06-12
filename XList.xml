@@ -1,26 +1,31 @@
 Class util.XList Extends (%AbstractList, %RegisteredObject)
 {
 
+/// Gives a converter to compare list values being less or equal to the baseValue.
 ClassMethod getLessOrEqualConverter(baseValue As %RegisteredObject) As util.Converter
 {
 	return ##class(util.ClassMethodConverter).create(..%ClassName(1),"isLessOrEqual",1,baseValue)
 }
 
+/// Gives true if val is less or equal to the baseValue.
 ClassMethod isLessOrEqual(baseValue As %RegisteredObject, val As %RegisteredObject) As %Boolean
 {
 	return val<=baseValue
 }
 
+/// Gives a converter to compare list values being greater or equal to the baseValue.
 ClassMethod getGreaterOrEqualConverter(baseValue As %RegisteredObject) As util.Converter
 {
 	return ##class(util.ClassMethodConverter).create(..%ClassName(1),"isGreaterOrEqual",1,baseValue)
 }
 
+/// Gives true if val is greater or equal to the baseValue.
 ClassMethod isGreaterOrEqual(baseValue As %RegisteredObject, val As %RegisteredObject) As %Boolean
 {
 	return val>=baseValue
 }
 
+/// Creates a new XList contaning the passed values.
 ClassMethod fromValues(values... As %RegisteredObject) As util.XList
 {
 	#dim a as XList
@@ -35,6 +40,7 @@ ClassMethod fromValues(values... As %RegisteredObject) As util.XList
 	return a
 }
 
+/// Creates a new XList containing the list-values.
 ClassMethod fromList(list As %AbstractList) As util.XList
 {
 	#dim a as XList
@@ -45,6 +51,7 @@ ClassMethod fromList(list As %AbstractList) As util.XList
 	return a
 }
 
+/// Creates a new XList containing the array values.
 ClassMethod fromArray(array As %AbstractArray) As XList
 {
 	#dim a as XList
@@ -56,6 +63,7 @@ ClassMethod fromArray(array As %AbstractArray) As XList
 	return a
 }
 
+/// Gives true if predicate gives true for any of the items.
 Method any(predicate As util.Converter) As %Boolean
 {
 	#dim found as %Boolean
@@ -70,6 +78,7 @@ Method any(predicate As util.Converter) As %Boolean
 	return found
 }
 
+/// Gives true if predicate gives true for all of the items.
 Method all(predicate As util.Converter) As %Boolean
 {
 	#dim found as %Boolean
@@ -84,11 +93,13 @@ Method all(predicate As util.Converter) As %Boolean
 	return found
 }
 
+/// Gives true if predicate gives true for any of the items of the list.
 ClassMethod listAny(list As %AbstractList, predicate As util.Converter) As %Boolean
 {
 	return ..fromList(list).any(predicate)
 }
 
+/// Gives the sum of the items according to the converter.
 Method sum(converter As util.Converter = {..getDefaultConverter()}) As %Float
 {
 	#dim sum as %Float
@@ -101,6 +112,7 @@ Method sum(converter As util.Converter = {..getDefaultConverter()}) As %Float
 	return sum
 }
 
+/// Gives a sublist containing every item which the predicate gives true for.
 Method select(predicate As util.Converter) As util.XList
 {
 	#dim list as util.XList
@@ -117,11 +129,13 @@ Method select(predicate As util.Converter) As util.XList
 	return list
 }
 
+/// Gives a sublist containing every list item which the predicate gives true for.
 ClassMethod listSelect(list As %AbstractList, predicate As util.Converter) As util.XList
 {
 	return ..fromList(list).select(predicate)
 }
 
+/// Calls action for every item.
 Method foreach(action As util.Action)
 {
 	for i=1:1:..Count()
@@ -130,11 +144,13 @@ Method foreach(action As util.Action)
 	}
 }
 
+/// Gives the first item.
 Method first() As %RegisteredObject
 {
 	return $S(..Count()>0:..GetAt(1),1:"")
 }
 
+/// Appends the list's items.
 Method insertMany(list As %AbstractList)
 {
 	for i=1:1:list.Count()
@@ -143,6 +159,7 @@ Method insertMany(list As %AbstractList)
 	}
 }
 
+/// Removes the list's items
 Method removeMany(list As %AbstractList)
 {
 	for i=1:1:list.Count()
@@ -151,6 +168,7 @@ Method removeMany(list As %AbstractList)
 	}
 }
 
+/// Gives an array of sublists keyed by the converter.
 Method groupBy(keyGetter As util.Converter) As %AbstractArray
 {
 	#dim a as %AbstractArray
@@ -168,11 +186,13 @@ Method groupBy(keyGetter As util.Converter) As %AbstractArray
 	return a
 }
 
+/// Gives an XList descending ordered by the converter's return value for every item.
 Method orderDescBy(converter As util.Converter = {..getDefaultConverter()}) As XList
 {
 	return ..getOrderedList(..groupBy(converter),0)
 }
 
+/// Gives an XList ascending ordered by the converter's return value for every item.
 Method orderAscBy(converter As util.Converter = {..getDefaultConverter()}) As XList
 {
 	return ..getOrderedList(..groupBy(converter))
@@ -183,6 +203,7 @@ Method getDefaultConverter() As util.ClassMethodConverter [ Private ]
 	return ##class(util.ClassMethodConverter).create(..%ClassName(1), "getItem", 1)
 }
 
+/// Returns just what you put in to be used as simple converter.
 ClassMethod getItem(item As %RegisteredObject) As %RegisteredObject
 {
 	return item
@@ -215,11 +236,13 @@ Method newArray() As %AbstractArray [ Private ]
 	return $S(..%IsA(##class(util.XListOfObjects).%ClassName(1)):##class(%ArrayOfObjects).%New(),1:##class(%ArrayOfDataTypes).%New())
 }
 
-Method distinct() As util.XList
+/// Gives an XList containing every entry just once concerning the converter.
+Method distinct(converter As util.Converter = {..getDefaultConverter()}) As util.XList
 {
 	#dim x as util.XList
 	#dim a as %AbstractArray
 	#dim e as %RegisteredObject
+	#dim converted as %RegisteredObject
 	
 	set a = ..newArray()
 	set x = ..instantiate()
@@ -227,15 +250,17 @@ Method distinct() As util.XList
 	for i=1:1:..Count()
 	{
 		set e = ..GetAt(i)
-		continue:a.IsDefined(e)
+		set converted = converter.invoke(e)
+		continue:a.IsDefined(converted)
 		
 		do x.Insert(e)
-		do a.SetAt(1,e)
+		do a.SetAt(1,converted)
 	}
 	
 	return x
 }
 
+/// Appends the array values.
 Method insertArrayValues(array As %AbstractArray)
 {
 		#dim key as %String
@@ -248,6 +273,7 @@ Method insertArrayValues(array As %AbstractArray)
 		}
 }
 
+/// Gives an XList containing the retur value of the converter for every item.
 Method convertAll(converter As util.Converter) As util.XList
 {
 	#dim x as util.XList
@@ -262,30 +288,31 @@ Method convertAll(converter As util.Converter) As util.XList
 	return x
 }
 
+/// Gives an XList containing the retur value of the converter for every item in the list.
 ClassMethod listConvertAll(list As %AbstractList, converter As util.Converter) As util.XList
 {
 	return ..fromList(list).convertAll(converter)
 }
 
-/// Ermittelt den minimalen Wert in der Liste bezüglich des übergebenen Converters und gibt diesen zurück
+/// Gives the minimum return value of the converter for all items.
 Method min(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
 {
 	return converter.invoke(..minItem(converter,skipEmptyValues))
 }
 
-/// Ermittelt den Eintrag der Liste mit dem minimalen Wert bezüglich des Converters und gibt den entsprechenden Listeneintrag zurück.
+/// Gives the item having the minimum return value of the converter.
 Method minItem(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
 {
 	return ..getBestItem(converter,skipEmptyValues,0)
 }
 
-/// Ermittelt den maximalen Wert in der Liste bezüglich des übergebenen Converters und gibt diesen zurück
+/// Gives the maximum return value of the converter for all items.
 Method max(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
 {
 	return converter.invoke(..maxItem(converter,skipEmptyValues))
 }
 
-/// Ermittelt den Eintrag der Liste mit dem maximalen Wert bezüglich des Converters und gibt den entsprechenden Listeneintrag zurück.
+/// Gives the item having the maximum return value of the converter.
 Method maxItem(converter As util.Converter, skipEmptyValues As %Boolean = 0) As %RegisteredObject
 {
 	return ..getBestItem(converter,skipEmptyValues,1)
@@ -313,11 +340,13 @@ Method getBestItem(converter As util.Converter, skipEmptyValues As %Boolean, gre
 	return item
 }
 
+/// Gives a string containing the return values of the converter for every item seperated by the seperator.
 Method toString(seperator As %String, converter As Converter = {..getDefaultConverter()}) As %String
 {
-	return ..stringJoinList(seperator, ..convertAll(converter))
+	return ..listStringJoin(..convertAll(converter), seperator)
 }
 
+/// Gives an XList of sublists with a limited number of items.
 Method toChunks(chunkSize As %Integer = 500) As util.XListOfObjects
 {
 	#dim chunks as util.XListOfObjects
@@ -350,19 +379,16 @@ ClassMethod instantiate() As %RegisteredObject [ Abstract, Private ]
 {
 }
 
-ClassMethod stringJoinList(separator As %String, parts As %ListOfDataTypes) As %String
+/// Gives a string containing the return values of the converter for every list item seperated by the seperator.
+ClassMethod listStringJoin(list As %ListOfDataTypes, separator As %String) As %String
 {
 	#dim line as %String
 	set line = ""
-	if parts '= ""
+	for i=1:1:list.Count()
 	{
-		for i=1:1:parts.Count()
-		{
-			set line = line_parts.GetAt(i)_separator
-		}
+		set line = line_list.GetAt(i)_separator
 	}
 	return $E(line,1,*-$L(separator))
 }
 
 }
-
