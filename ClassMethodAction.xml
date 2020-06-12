@@ -3,6 +3,7 @@ Class util.ClassMethodAction Extends util.Action
 
 Property className As %String;
 
+/// Creates a new instance of this class.
 ClassMethod create(className As %String, methodName As %String, args... As %RegisteredObject) As util.ClassMethodAction
 {
 	#dim a as util.ClassMethodAction
@@ -15,10 +16,10 @@ ClassMethod create(className As %String, methodName As %String, args... As %Regi
 	return a
 }
 
+/// Method to do the actual call to the embedded property or method.
 Method invoke(args... As %RegisteredObject) [ CodeMode = objectgenerator ]
 {
 	do ..invokeBase("  do $ClassMethod(..className")
 }
 
 }
-
