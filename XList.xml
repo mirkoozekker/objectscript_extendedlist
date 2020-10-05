@@ -370,6 +370,19 @@ Method toChunks(chunkSize As %Integer = 500) As util.XListOfObjects
 	return chunks
 }
 
+/// Gives an ordered array containing the list values.
+Method toArray() As %AbstractArray
+{
+	#dim array as %AbstractArray
+	
+	set array = ..newArray()
+	for i=1:1:..Count()
+	{
+		do array.SetAt(..GetAt(i),i)
+	}
+	return array
+}
+
 Method isBetter(bestValue As %RegisteredObject, currentValue As %RegisteredObject, greater As %Boolean) As %Boolean [ Private ]
 {
 	return bestValue=""||((bestValue<currentValue)&&(greater))||((bestValue>currentValue)&&('greater))
