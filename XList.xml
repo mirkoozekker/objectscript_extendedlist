@@ -383,6 +383,21 @@ Method toArray() As %AbstractArray
 	return array
 }
 
+/// Gives a keyed array containing the list values.
+Method toKeyedArray(keyGetter As Converter = {..getDefaultConverter()}) As %AbstractArray
+{
+	#dim array as %AbstractArray
+	#dim entry as %RegisteredObject
+	
+	set array = ..newArray()
+	for i=1:1:..Count()
+	{
+		set entry = ..GetAt(i)
+		do array.SetAt(entry,keyGetter.invoke(entry))
+	}
+	return array
+}
+
 Method isBetter(bestValue As %RegisteredObject, currentValue As %RegisteredObject, greater As %Boolean) As %Boolean [ Private ]
 {
 	return bestValue=""||((bestValue<currentValue)&&(greater))||((bestValue>currentValue)&&('greater))
