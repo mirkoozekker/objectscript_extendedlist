@@ -1,6 +1,8 @@
 Class %ZLib.XList Extends (%AbstractList, %RegisteredObject) [ Abstract ]
 {
 
+Parameter NULLREFKEY = "NULLREFKEY";
+
 /// Gives a converter to compare list values being less or equal to the baseValue.
 ClassMethod getLessOrEqualConverter(baseValue As %RegisteredObject) As %ZLib.Delegates.Converter
 {
@@ -23,6 +25,23 @@ ClassMethod getGreaterOrEqualConverter(baseValue As %RegisteredObject) As %ZLib.
 ClassMethod isGreaterOrEqual(baseValue As %RegisteredObject, val As %RegisteredObject) As %Boolean
 {
 	return val>=baseValue
+}
+
+/// Gives a converter to compare list values being a $$$NULLOREF
+ClassMethod getIsNullOrefConverter() As %ZLib.Delegates.Converter
+{
+	return ##class(%ZLib.Delegates.ClassMethodConverter).create(..%ClassName(1),"isNullOref",1)
+}
+
+/// Gives true if val is $$$NULLOREF
+ClassMethod isNullOref(val As %RegisteredObject = "") As %Boolean
+{
+	return val = $$$NULLOREF
+}
+
+ClassMethod getHashedValue(text As %String = "") As %String
+{
+	return ##class(%SYSTEM.Encryption).SHAHash(512, text)
 }
 
 /// Creates a new XList contaning the passed values.
@@ -173,12 +192,22 @@ ClassMethod listSelect(list As %AbstractList, predicate As %ZLib.Delegates.Conve
 	return ..fromList(list).select(predicate)
 }
 
-/// Calls action for every item.
-Method foreach(action As %ZLib.Delegates.Action)
+/// Calls all actions for every item.
+Method foreach(actions... As %ZLib.Delegates.Action)
 {
+	#dim i as %Integer
+	#dim c as %Integer
+	#dim k as %Integer
+	#dim action as %ZLib.Delegates.Action
+	
+  	set c = $GET(actions,0)
 	for i=1:1:..Count()
 	{
-		do action.invoke(..GetAt(i))
+		for k=1:1:c
+		{
+			set action = $GET(actions(k),"")
+			do:$IsObject(action) action.invoke(..GetAt(i))
+		}
 	}
 }
 
@@ -211,30 +240,37 @@ Method removeMany(list As %AbstractList)
 	#dim deletes as %ZLib.XListOfDataTypes
 	#dim i as %Integer
 	
-	set array = ..fromList(list).toKeyedArray()
+	set array = ..fromList(list).toKeyedHashArray()
 	set deletes = ##class(%ZLib.XListOfDataTypes).%New()
 	
 	for i=1:1:..Count()
 	{
-		do:array.IsDefined(..GetAt(i)) deletes.Insert(i)
+		do:array.IsDefined(..getHashedValue(..getNullOrefKey(..GetAt(i)))) deletes.Insert(i)
 	}
-	for i=1:1:deletes.Count()
+	for i=deletes.Count():-1:1
 	{
 		do ..RemoveAt(deletes.GetAt(i))
 	}
 }
 
+/// Removes $$$NULLOREF
+Method removeNullOref()
+{
+	do ..remove(..getIsNullOrefConverter())
+}
+
 /// Gives an array of sublists keyed by the converter.
 Method groupBy(keyGetter As %ZLib.Delegates.Converter) As %AbstractArray
 {
+	#dim i as %Integer
 	#dim a as %AbstractArray
 	#dim key as %RegisteredObject
 	
 	set a =  ..newArray()
 	
-	for i=1:1:..Count()
-	{
-		set key = keyGetter.invoke(..GetAt(i))
+	for i=1:1:..Count()	{
+		set key = ..getNullOrefKey(keyGetter.invoke(..GetAt(i)))
+		do:$Length(key)>510 ##class(%ZLib.ExceptionHelper).raiseExceptionUD("TYPES.XListKeyLengthTooLong", "Key too long", "Key Length="_$Length(key)_" index="_i)
 		do:('a.IsDefined(key)) a.SetAt(..%New(),key)
 		do a.GetAt(key).Insert(..GetAt(i))
 	}
@@ -295,6 +331,7 @@ Method newArray() As %AbstractArray [ Internal, Private ]
 /// Gives an XList containing every entry just once concerning the converter.
 Method distinct(converter As %ZLib.Delegates.Converter = {..getDefaultConverter()}) As %ZLib.XList
 {
+	#dim i as %Integer
 	#dim x as %ZLib.XList
 	#dim a as %ArrayOfDataTypes
 	#dim e as %RegisteredObject
@@ -306,7 +343,7 @@ Method distinct(converter As %ZLib.Delegates.Converter = {..getDefaultConverter(
 	for i=1:1:..Count()
 	{
 		set e = ..GetAt(i)
-		set converted = converter.invoke(e)
+		set converted = ..getHashedValue(..getNullOrefKey(converter.invoke(e)))
 		continue:a.IsDefined(converted)
 		
 		do x.Insert(e)
@@ -344,7 +381,6 @@ Method convertAll(converter As %ZLib.Delegates.Converter) As XList
 	return x
 }
 
-/// Returns true if this list doesn't contain any items.
 Method isEmpty() As %Boolean
 {
 	return ..Count()=0
@@ -407,14 +443,21 @@ Method getBestItem(converter As %ZLib.Delegates.Converter, skipEmptyValues As %B
 /// Gives a string containing the return values of the converter for every item seperated by the seperator.
 Method toString(seperator As %String = ", ", converter As %ZLib.Delegates.Converter = {..getDefaultConverter()}) As %String
 {
+	#dim i as %Integer
 	#dim line as %String
+	do:('$IsObject(converter)) ##class(%ZLib.ExceptionHelper).raiseExceptionUD("XLIST.MissingConverter", "toString need converte")
 	set line = ""
-	for i=1:1:..Count()
-	{
-		set line = line_..GetAt(i)_seperator
+	for i=1:1:..Count() {
+		set line = line_converter.invoke(..GetAt(i))_seperator
 	}
 
 	return $E(line,1,*-$L(seperator))
+}
+
+/// Returns a list item.
+Method toList(converter As %ZLib.Delegates.Converter = {..getDefaultConverter()}) As %String
+{
+	return $ListFromString(..toString(",", converter))
 }
 
 /// Gives an XList of sublists with a limited number of items.
@@ -454,6 +497,16 @@ Method toArray() As %AbstractArray
 	return array
 }
 
+Method toValues(Output result As %String, valueConverter As %ZLib.Delegates.Converter = {..getDefaultConverter()})
+{
+	#dim i as %Integer
+	kill result
+	set result = ..Count()
+	for i=1:1:..Count() {
+		set result(i) = valueConverter.invoke(..GetAt(i))
+	}
+}
+
 /// Gives a keyed array containing the list values.
 Method toKeyedArray(keyGetter As %ZLib.Delegates.Converter = {..getDefaultConverter()}) As %AbstractArray
 {
@@ -464,9 +517,29 @@ Method toKeyedArray(keyGetter As %ZLib.Delegates.Converter = {..getDefaultConver
 	for i=1:1:..Count()
 	{
 		set entry = ..GetAt(i)
-		do array.SetAt(entry,keyGetter.invoke(entry))
+		do array.SetAt(entry,..getNullOrefKey(keyGetter.invoke(entry)))
 	}
 	return array
+}
+
+/// Gives a keyed array containing the list values.
+Method toKeyedHashArray(keyGetter As %ZLib.Delegates.Converter = {..getDefaultConverter()}) As %AbstractArray
+{
+	#dim array as %AbstractArray
+	#dim entry as %RegisteredObject
+	
+	set array = ..newArray()
+	for i=1:1:..Count() {
+		set entry = ..GetAt(i)
+		do array.SetAt(entry, ..getHashedValue(..getNullOrefKey(keyGetter.invoke(entry))))
+	}
+	return array
+}
+
+ClassMethod getNullOrefKey(key As %String = "") As %String
+{
+	return:(key = "") ..#NULLREFKEY
+	return key
 }
 
 Method isBetter(bestValue As %RegisteredObject, currentValue As %RegisteredObject, greater As %Boolean) As %Boolean [ Private ]
@@ -474,9 +547,25 @@ Method isBetter(bestValue As %RegisteredObject, currentValue As %RegisteredObjec
 	return bestValue=""||((bestValue<currentValue)&&(greater))||((bestValue>currentValue)&&('greater))
 }
 
+Method getSublist(firstIndex As %Integer, lastIndex As %Integer = {..Count()}) As %ZLib.XListOfDataTypes
+{
+	#dim i as %Integer
+	#dim newItem as %String
+	#dim result as XList
+	
+	set result = ..instantiate()
+	return:(firstIndex>lastIndex) result
+	return:(firstIndex>..Count()) result
+
+	For i = firstIndex:1:lastIndex {
+		do result.Insert(..GetAt(i))
+	}
+	
+	return result
+}
+
 ClassMethod instantiate() As XList [ Abstract, Internal, Private ]
 {
 }
 
 }
-
