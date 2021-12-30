@@ -1,30 +1,44 @@
 Class %ZLib.XListOfDataTypes Extends (%ListOfDataTypes, %ZLib.XList)
 {
 
-ClassMethod instantiate() As %ZLib.XListOfDataTypes [ Internal, Private ]
+ClassMethod instantiate() As XListOfDataTypes [ Internal, Private ]
 {
 	return ..%New()
 }
 
-/// Creates a new list containing the parts of the string split by the given seperator.
-ClassMethod fromString(string As %String, delimiter As %String = ",", zConvertMode As %String = "") As %ZLib.XListOfDataTypes
+ClassMethod fromDynamicArray(array As %DynamicArray) As XListOfDataTypes
 {
-	#dim i as %Integer
-	#dim list as %ZLib.XListOfDataTypes
-	#dim workString as %String = string
+	#dim list as XListOfDataTypes
+	#dim iter as %Iterator.Array
+	#dim key as %RegisteredObject
+	#dim value as %RegisteredObject
 	
-	set:zConvertMode'="" workString = $ZCONVERT(string, zConvertMode)
-	
-	set list = ##class(%ZLib.XListOfDataTypes).%New()
-	for i=1:1:$Length(workString,delimiter)
-	{
-		do list.Insert($ZSTRIP($Piece(workString,delimiter,i),"<>W"))
+	set list = ..%New()
+
+	set iter = array.%GetIterator()
+	while iter.%GetNext(.key,.value) {
+		do list.Insert(value)
 	}
-	
+
 	return list
 }
 
-/// Creates a new list form the given array containing its values and keys seperated by given seperator.
+ClassMethod fromString(string As %String, delimiter As %String = ",", zConvertMode As %String = "", addEmptyTokens As %String = {$$$YES}) As XListOfDataTypes
+{
+	#dim list as XListOfDataTypes
+	set list = ..%New()
+	do list.insertString(string, delimiter, zConvertMode, addEmptyTokens)
+	return list
+}
+
+ClassMethod fromStringByLength(string As %String, length As %Integer, ignoreInCompleteEnd As %Boolean = {$$$NO}) As XListOfDataTypes
+{
+	#dim list as XListOfDataTypes
+	set list = ..%New()
+	do list.insertStringByLength(string, length, ignoreInCompleteEnd)
+	return list
+}
+
 ClassMethod fromArrayWithKey(array As %AbstractArray, separator As %String = ":") As XList
 {
 	#dim a as XList
@@ -36,7 +50,34 @@ ClassMethod fromArrayWithKey(array As %AbstractArray, separator As %String = ":"
 	return a
 }
 
-/// Adds all values of the given Array to the list. Key kan be included an will be seperated by given seperator.
+/// Zerlegt den übergebenen String am übergebenen Delimiter.
+Method insertString(string As %String, delimiter As %String = ",", zConvertMode As %String = "", addEmptyTokens As %String = {$$$YES})
+{
+	#dim i as	%Integer
+	#dim workString as %String = string
+	#dim token as %String
+	
+	set:zConvertMode'="" workString = $ZCONVERT(string, zConvertMode)
+	for i=1:1:$Length(workString,delimiter)
+	{
+		set token = ##class(String).trim($Piece(workString,delimiter,i))
+		do:(addEmptyTokens || (token '= "")) ..Insert(token)
+	}
+}
+
+/// Stückelt den übergebenen String in Größen von <parameter>length</paremeter>.
+/// <parameter>ignoreInCompleteEnd</paremeter> entscheidet, ob unvollständige Stücke ignoriert werden. 
+Method insertStringByLength(string As %String, length As %Integer, ignoreInCompleteEnd As %Boolean = {$$$NO})
+{
+	#dim cnt as %Integer
+	#dim i as %Integer
+	set cnt = $LENGTH(string) \ length
+	set:((($LENGTH(string) # length) > 0) && 'ignoreInCompleteEnd) cnt = cnt+1
+	for i = 1:1:cnt {
+		do ..Insert($EXTRACT(string, (i-1)*length+1, (i-1)*length+length))
+	}
+}
+
 Method insertArrayValues(array As %AbstractArray, includeKey As %Boolean = 0, separator As %String = ":")
 {
 	#dim key as %String
@@ -56,7 +97,6 @@ Method insertArrayValues(array As %AbstractArray, includeKey As %Boolean = 0, se
 	}
 }
 
-/// Sorts the items of this list equivalent to those in the given list, casesensitive optionally.
 Method sortByList(sortOrder As XListOfDataTypes, caseSensitive As %Boolean)
 {
 	#dim i as %Integer
@@ -83,13 +123,33 @@ Method sortByList(sortOrder As XListOfDataTypes, caseSensitive As %Boolean)
 	}
 }
 
-/// Returns a list containing only the not empty values of this list.
 Method selectNotEmptyValues() As XListOfDataTypes
 {
 	return ..select(##class(%ZLib.Delegates.ObjectMethodConverter).create($this, "isNotEmpty"))
 }
 
-/// Calls the given Action on every item of the list parallely with the given number auf threads.
+Method indexOf(startsString As %String, caseSensitive As %Boolean = {$$$NO}) As %Integer
+{
+	#dim i as %Integer
+	#dim currentLine as %String
+	#dim compCurrentLine as %String
+	#dim compStartsString as %String = startsString
+
+	set:('caseSensitive) compStartsString = $ZCONVERT(startsString, "L")
+	For i = 1:1:..Count() {
+		set currentLine = ..GetAt(i)
+		set compCurrentLine = currentLine
+		set:('caseSensitive) compCurrentLine = $ZCONVERT(currentLine, "L")
+		return:(compCurrentLine[compStartsString) i
+	}
+	return -1
+}
+
+Method findStartsWith(startsString As %String, caseSensitive As %Boolean = {$$$NO}, returnOffset As %Integer = 0) As %String
+{
+	return ..GetAt(..indexOf(startsString, caseSensitive) + returnOffset)
+}
+
 Method parallel(action As %ZLib.Delegates.ClassMethodAction, numberOfJobs As %Integer = 4)
 {
 	#dim queue as %SYSTEM.WorkMgr
@@ -112,4 +172,3 @@ Storage Custom
 }
 
 }
-
